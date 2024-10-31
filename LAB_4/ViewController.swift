@@ -21,6 +21,7 @@ class ViewController: UIViewController {
     // Main view for showing camera content.
     @IBOutlet weak var previewView: UIView?
     
+    @IBOutlet weak var expressionLabel: UILabel!
     // AVCapture variables to hold sequence data
     var session: AVCaptureSession?
     var previewLayer: AVCaptureVideoPreviewLayer?
@@ -47,6 +48,9 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        expressionLabel.layer.zPosition = 1 //make sure label is seen ontop
+        view.bringSubviewToFront(expressionLabel)
         
         // setup video for high resolution, drop frames when busy, and front camera
         self.session = self.setupAVCaptureSession()
@@ -341,13 +345,42 @@ class ViewController: UIViewController {
             return
         }
         
+        for faceObservation in results {
+            if let landmarks = faceObservation.landmarks,
+                       let outerLips = landmarks.outerLips {
+                        
+                        let mouthPoints = outerLips.normalizedPoints
+                        
+                        if mouthPoints.count > 1 {
+                            let leftCorner = mouthPoints.first!
+                            let rightCorner = mouthPoints.last!
+                            
+                            // Calculate the slope between the left and right corners
+                            let slope = (rightCorner.y - leftCorner.y) / (rightCorner.x - leftCorner.x)
+                            
+                            // Check the slope and update the expression label accordingly
+                            DispatchQueue.main.async {
+                                if slope > 0.7 {
+                                    self.expressionLabel.text = "☹️"  // Frown emoji
+                                    print("Frown detected! Slope: \(slope)")
+                                } else if slope < 0.2 {
+                                    self.expressionLabel.text = "😊"  // Smile emoji
+                                    print("Smile detected! Slope: \(slope)")
+                                } else {
+                                    self.expressionLabel.text = "😐"  // Neutral emoji
+                                    print("Neutral expression detected. Slope: \(slope)")
+                                }
+                            }
+                        }
+                    }
+                }
+
         // Perform all UI updates (drawing) on the main queue, not the background queue on which this handler is being called.
         DispatchQueue.main.async {
             // draw the landmarks using core animation layers
             self.drawFaceObservations(results)
         }
     }
-    
     
 }
 
