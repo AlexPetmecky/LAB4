@@ -44,6 +44,9 @@ class ViewController: UIViewController {
     
     lazy var sequenceRequestHandler = VNSequenceRequestHandler()
     
+    var expressionNum = 0
+    var colorCounter = 0
+    
     // MARK: UIViewController overrides
     
     override func viewDidLoad() {
@@ -362,14 +365,36 @@ class ViewController: UIViewController {
                             DispatchQueue.main.async {
                                 if slope > 0.7 {
                                     self.expressionLabel.text = "☹️"  // Frown emoji
+                                    self.expressionNum = 3
                                     print("Frown detected! Slope: \(slope)")
                                 } else if slope < 0.2 {
                                     self.expressionLabel.text = "😊"  // Smile emoji
+                                    self.expressionNum = 1
                                     print("Smile detected! Slope: \(slope)")
                                 } else {
                                     self.expressionLabel.text = "😐"  // Neutral emoji
+                                    self.expressionNum = 2
                                     print("Neutral expression detected. Slope: \(slope)")
                                 }
+                                
+                                if (self.colorCounter < 10){
+                                    self.colorCounter = self.colorCounter + 1
+                                }else{
+//                                     setup video for high resolution, drop frames when busy, and front camera
+//                                    self.teardownAVCapture()
+                                    
+                                    self.session = self.setupAVCaptureSession()
+                                    
+                                    // setup the vision objects for (1) detection and (2) tracking
+//                                    self.updateLayerGeometry()
+                                    self.setupVisionDrawingLayers()
+//                                    self.prepareVisionRequest()
+                                    
+                                    // start the capture session and get processing a face!
+                                    self.session?.startRunning()
+                                    self.colorCounter = 0
+                                }
+                                
                             }
                         }
                     }
@@ -582,6 +607,16 @@ extension ViewController {
             return
         }
         
+        var expressionColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
+        if(expressionNum == 1){
+            expressionColor = UIColor.green.withAlphaComponent(0.7).cgColor
+        }else if(expressionNum == 3){
+            expressionColor = UIColor.red.withAlphaComponent(0.7).cgColor
+        }else{
+            expressionColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
+        }
+        
+        
         let overlayLayer = CALayer()
         overlayLayer.name = "DetectionOverlay"
         overlayLayer.masksToBounds = true
@@ -606,7 +641,7 @@ extension ViewController {
         faceLandmarksShapeLayer.anchorPoint = normalizedCenterPoint
         faceLandmarksShapeLayer.position = captureDeviceBoundsCenterPoint
         faceLandmarksShapeLayer.fillColor = nil
-        faceLandmarksShapeLayer.strokeColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
+        faceLandmarksShapeLayer.strokeColor = expressionColor
         faceLandmarksShapeLayer.lineWidth = 3
         faceLandmarksShapeLayer.shadowOpacity = 0.7
         faceLandmarksShapeLayer.shadowRadius = 5
