@@ -47,6 +47,10 @@ class ViewController: UIViewController {
     var expressionNum = 0
     var colorCounter = 0
     
+    var overlayLayer = CALayer()
+    var faceLandmarksShapeLayer = CAShapeLayer()
+    var faceRectangleShapeLayer = CAShapeLayer()
+    
     // MARK: UIViewController overrides
     
     override func viewDidLoad() {
@@ -377,21 +381,31 @@ class ViewController: UIViewController {
                                     print("Neutral expression detected. Slope: \(slope)")
                                 }
                                 
-                                if (self.colorCounter < 10){
+                                if (self.colorCounter < 5){
                                     self.colorCounter = self.colorCounter + 1
                                 }else{
-//                                     setup video for high resolution, drop frames when busy, and front camera
+                                    
+                                    
+                                    var expressionColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
+                                    if(self.expressionNum == 1){
+                                        expressionColor = UIColor.green.withAlphaComponent(0.7).cgColor
+                                    }else if(self.expressionNum == 3){
+                                        expressionColor = UIColor.red.withAlphaComponent(0.7).cgColor
+                                    }else{
+                                        expressionColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
+                                    }
+                                    
+                                    self.faceLandmarksShapeLayer.strokeColor = expressionColor
+                                    
 //                                    self.teardownAVCapture()
                                     
-                                    self.session = self.setupAVCaptureSession()
-                                    
-                                    // setup the vision objects for (1) detection and (2) tracking
-//                                    self.updateLayerGeometry()
-                                    self.setupVisionDrawingLayers()
+//                                    self.session = self.setupAVCaptureSession()
+                                
+                                    self.updateLayerGeometry()
+//                                    self.setupVisionDrawingLayers()
 //                                    self.prepareVisionRequest()
                                     
-                                    // start the capture session and get processing a face!
-                                    self.session?.startRunning()
+//                                    self.session?.startRunning()
                                     self.colorCounter = 0
                                 }
                                 
@@ -607,44 +621,35 @@ extension ViewController {
             return
         }
         
-        var expressionColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
-        if(expressionNum == 1){
-            expressionColor = UIColor.green.withAlphaComponent(0.7).cgColor
-        }else if(expressionNum == 3){
-            expressionColor = UIColor.red.withAlphaComponent(0.7).cgColor
-        }else{
-            expressionColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
-        }
         
+        self.overlayLayer = CALayer()
+        self.overlayLayer.name = "DetectionOverlay"
+        self.overlayLayer.masksToBounds = true
+        self.overlayLayer.anchorPoint = normalizedCenterPoint
+        self.overlayLayer.bounds = captureDeviceBounds
+        self.overlayLayer.position = CGPoint(x: rootLayer.bounds.midX, y: rootLayer.bounds.midY)
         
-        let overlayLayer = CALayer()
-        overlayLayer.name = "DetectionOverlay"
-        overlayLayer.masksToBounds = true
-        overlayLayer.anchorPoint = normalizedCenterPoint
-        overlayLayer.bounds = captureDeviceBounds
-        overlayLayer.position = CGPoint(x: rootLayer.bounds.midX, y: rootLayer.bounds.midY)
+        self.faceRectangleShapeLayer = CAShapeLayer()
+        self.faceRectangleShapeLayer.name = "RectangleOutlineLayer"
+        self.faceRectangleShapeLayer.bounds = captureDeviceBounds
+        self.faceRectangleShapeLayer.anchorPoint = normalizedCenterPoint
+        self.faceRectangleShapeLayer.position = captureDeviceBoundsCenterPoint
+        self.faceRectangleShapeLayer.fillColor = nil
+        self.faceRectangleShapeLayer.strokeColor = UIColor.green.withAlphaComponent(0.7).cgColor
+        self.faceRectangleShapeLayer.lineWidth = 5
+        self.faceRectangleShapeLayer.shadowOpacity = 0.7
+        self.faceRectangleShapeLayer.shadowRadius = 5
         
-        let faceRectangleShapeLayer = CAShapeLayer()
-        faceRectangleShapeLayer.name = "RectangleOutlineLayer"
-        faceRectangleShapeLayer.bounds = captureDeviceBounds
-        faceRectangleShapeLayer.anchorPoint = normalizedCenterPoint
-        faceRectangleShapeLayer.position = captureDeviceBoundsCenterPoint
-        faceRectangleShapeLayer.fillColor = nil
-        faceRectangleShapeLayer.strokeColor = UIColor.green.withAlphaComponent(0.7).cgColor
-        faceRectangleShapeLayer.lineWidth = 5
-        faceRectangleShapeLayer.shadowOpacity = 0.7
-        faceRectangleShapeLayer.shadowRadius = 5
-        
-        let faceLandmarksShapeLayer = CAShapeLayer()
-        faceLandmarksShapeLayer.name = "FaceLandmarksLayer"
-        faceLandmarksShapeLayer.bounds = captureDeviceBounds
-        faceLandmarksShapeLayer.anchorPoint = normalizedCenterPoint
-        faceLandmarksShapeLayer.position = captureDeviceBoundsCenterPoint
-        faceLandmarksShapeLayer.fillColor = nil
-        faceLandmarksShapeLayer.strokeColor = expressionColor
-        faceLandmarksShapeLayer.lineWidth = 3
-        faceLandmarksShapeLayer.shadowOpacity = 0.7
-        faceLandmarksShapeLayer.shadowRadius = 5
+        self.faceLandmarksShapeLayer = CAShapeLayer()
+        self.faceLandmarksShapeLayer.name = "FaceLandmarksLayer"
+        self.faceLandmarksShapeLayer.bounds = captureDeviceBounds
+        self.faceLandmarksShapeLayer.anchorPoint = normalizedCenterPoint
+        self.faceLandmarksShapeLayer.position = captureDeviceBoundsCenterPoint
+        self.faceLandmarksShapeLayer.fillColor = nil
+        self.faceLandmarksShapeLayer.strokeColor = UIColor.yellow.withAlphaComponent(0.7).cgColor
+        self.faceLandmarksShapeLayer.lineWidth = 3
+        self.faceLandmarksShapeLayer.shadowOpacity = 0.7
+        self.faceLandmarksShapeLayer.shadowRadius = 5
         
         overlayLayer.addSublayer(faceRectangleShapeLayer)
         faceRectangleShapeLayer.addSublayer(faceLandmarksShapeLayer)
